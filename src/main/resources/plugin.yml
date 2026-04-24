@@ -1,0 +1,9 @@
+name: BAFSync
+version: 1.0.0
+main: eu.baf.sync.BAFSync
+api-version: 1.20
+author: Rico
+commands:
+  biersync:
+    description: Synchronisiert deinen Account mit der App
+    usage: /biersync <token>
