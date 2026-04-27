@@ -15,6 +15,8 @@ import java.net.URL;
 
 public class SyncCommand implements CommandExecutor {
 
+    private static final String API_URL = "https://us-central1-bierandfriends-c1764.cloudfunctions.net/sync";
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -32,8 +34,8 @@ public class SyncCommand implements CommandExecutor {
 
         String token = args[0];
         String uuid = player.getUniqueId().toString();
+        String name = player.getName();
 
-        // LuckPerms API
         LuckPerms lp = LuckPermsProvider.get();
         User user = lp.getUserManager().getUser(player.getUniqueId());
 
@@ -43,51 +45,68 @@ public class SyncCommand implements CommandExecutor {
         }
 
         String group = user.getPrimaryGroup();
-
-        // Mapping
         String ingameRank = mapRank(group);
 
-        // HTTP Request an App
-        sendSyncRequest(token, uuid, ingameRank);
-
-        player.sendMessage("§aSync-Anfrage gesendet!");
+        sendSyncRequest(token, uuid, name, ingameRank, player);
         return true;
     }
 
     private String mapRank(String group) {
         switch (group.toLowerCase()) {
-            case "default":
-                return "malzbier";
-            case "feierabendbier":
-                return "feierabendbier";
-            case "vollwieneimer":
-                return "vollwieneimer";
-            case "absturzlegende":
-                return "absturzlegende";
-            default:
-                return "unbekannt";
+            case "default": return "malzbier";
+            case "feierabendbier": return "feierabendbier";
+            case "vollwieneimer": return "vollwieneimer";
+            case "absturzlegende": return "absturzlegende";
+            case "builder": return "builder";
+            case "moderator": return "moderator";
+            case "supporter": return "supporter";
+            case "trainee": return "trainee";
+            case "admin": return "admin";
+            case "cheffe": return "cheffe";
+            default: return "malzbier";
         }
     }
 
-    private void sendSyncRequest(String token, String uuid, String rank) {
+    private void sendSyncRequest(String token, String uuid, String name, String rank, Player player) {
         Bukkit.getScheduler().runTaskAsynchronously(BAFSync.getInstance(), () -> {
             try {
-                URL url = new URL("https://baf.bierandfriends.eu/api/sync");
+                URL url = new URL(API_URL);
                 HttpURLConnection con = (HttpURLConnection) url.openConnection();
                 con.setRequestMethod("POST");
                 con.setDoOutput(true);
                 con.setRequestProperty("Content-Type", "application/json");
+                con.setConnectTimeout(5000);
+                con.setReadTimeout(5000);
 
-                String json = "{ \"token\": \"" + token + "\", \"uuid\": \"" + uuid + "\", \"rank\": \"" + rank + "\" }";
+                String json = "{"
+                    + "\"token\":\"" + token + "\","
+                    + "\"uuid\":\"" + uuid + "\","
+                    + "\"minecraftName\":\"" + name + "\","
+                    + "\"rank\":\"" + rank + "\""
+                    + "}";
 
                 OutputStream os = con.getOutputStream();
                 os.write(json.getBytes());
                 os.flush();
                 os.close();
 
-                con.getResponseCode(); // send request
+                int responseCode = con.getResponseCode();
+
+                Bukkit.getScheduler().runTask(BAFSync.getInstance(), () -> {
+                    if (responseCode == 200) {
+                        player.sendMessage("§aDein Account wurde erfolgreich synchronisiert!");
+                    } else if (responseCode == 404) {
+                        player.sendMessage("§cUngültiger Token! Erstelle einen neuen in der App.");
+                    } else {
+                        player.sendMessage("§cSync fehlgeschlagen. Bitte versuche es später erneut.");
+                    }
+                });
+
             } catch (Exception e) {
                 e.printStackTrace();
+                Bukkit.getScheduler().runTask(BAFSync.getInstance(), () ->
+                    player.sendMessage("§cVerbindungsfehler. Bitte versuche es später erneut.")
+                );
             }
         });
     }
