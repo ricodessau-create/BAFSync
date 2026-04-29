@@ -1,0 +1,17 @@
+name: BAFSync
+version: 1.0.0
+main: eu.baf.sync.BAFSync
+api-version: 1.20
+author: RicoDessau
+description: Synchronisiert Minecraft-Accounts mit der BierAndFriends App
+
+commands:
+  biersync:
+    description: Verknüpfe deinen Account mit der BierAndFriends App
+    usage: /biersync <token>
+    permission: bafsync.use
+
+permissions:
+  bafsync.use:
+    description: Erlaubt die Nutzung von /biersync
+    default: true
