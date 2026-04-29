@@ -1,0 +1,3 @@
+# BAF Sync Konfiguration
+# URL der BAF Sync API (läuft neben der server.jar)
+api-url: "http://localhost:3000/sync"
