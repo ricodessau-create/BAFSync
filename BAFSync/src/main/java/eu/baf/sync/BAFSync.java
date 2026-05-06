@@ -1,35 +1,29 @@
-package eu.baf.sync;
+package eu.bierandfriends.bafsync;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BAFSync extends JavaPlugin {
 
     private static BAFSync instance;
+    private String apiUrl;
 
     @Override
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        apiUrl = getConfig().getString("api-url", "https://us-central1-DEINE-PROJEKT-ID.cloudfunctions.net");
 
-        getCommand("biersync").setExecutor(new SyncCommand());
-
-        getLogger().info("╔══════════════════════════════╗");
-        getLogger().info("║    BAF Sync Plugin v1.0.0    ║");
-        getLogger().info("║  BierAndFriends Account Sync ║");
-        getLogger().info("╚══════════════════════════════╝");
-        getLogger().info("Plugin erfolgreich aktiviert!");
+        getCommand("biersync").setExecutor(new SyncCommand(this));
+        getLogger().info("✅ BAFSync Plugin gestartet!");
+        getLogger().info("📡 API URL: " + apiUrl);
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("BAF Sync Plugin deaktiviert.");
+        getLogger().info("BAFSync Plugin gestoppt.");
     }
 
-    public static BAFSync getInstance() {
-        return instance;
-    }
+    public static BAFSync getInstance() { return instance; }
 
-    public String getApiUrl() {
-        return getConfig().getString("api-url", "http://localhost:3000/sync");
-    }
+    public String getApiUrl() { return apiUrl; }
 }
