@@ -1,3 +1,4 @@
-# BAF Sync Konfiguration
-# URL der BAF Sync API (läuft neben der server.jar)
-api-url: "http://localhost:3000/sync"
+# Firebase Cloud Function URL
+# Nach dem Deploy von Firebase Functions siehst du die URL im Terminal
+# Beispiel: https://us-central1-baf-app-12345.cloudfunctions.net
+api-url: "https://us-central1-DEINE-PROJEKT-ID.cloudfunctions.net"
