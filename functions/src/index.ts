@@ -20,7 +20,7 @@ export const biersync = functions.https.onRequest(async (req, res) => {
     }
 
     try {
-        const { token, uuid, name } = req.body || {};
+        const { token, uuid, name, bedrock } = req.body || {};
 
         if (!token || !uuid || !name) {
             res.status(400).json({ success: false, message: "Fehlende Felder" });
@@ -31,33 +31,53 @@ export const biersync = functions.https.onRequest(async (req, res) => {
         const tokenDoc = await db.collection("sync_tokens").doc(token).get();
 
         if (!tokenDoc.exists) {
-            res.status(400).json({ success: false, message: "Ungültiger oder abgelaufener Token" });
+            res.status(400).json({
+                success: false,
+                message: "Ungültiger Token. Bitte neu generieren."
+            });
             return;
         }
 
-        const uid = tokenDoc.get("uid");
+        const tokenData = tokenDoc.data();
+        const uid = tokenData?.uid;
 
         if (!uid) {
-            res.status(400).json({ success: false, message: "Token ohne Benutzer" });
+            res.status(400).json({ success: false, message: "Token ungültig" });
             return;
         }
 
-        // Minecraft-Daten im User-Profil speichern
+        // Token-Ablauf prüfen (10 Minuten)
+        const createdAt = tokenData?.createdAt?.toMillis() || 0;
+        const tenMinutes = 10 * 60 * 1000;
+        if (Date.now() - createdAt > tenMinutes) {
+            await tokenDoc.ref.delete();
+            res.status(400).json({
+                success: false,
+                message: "Token abgelaufen. Bitte in der App neu generieren."
+            });
+            return;
+        }
+
+        // Minecraft-Daten speichern
         const userRef = db.collection("users").doc(uid);
         await userRef.set(
-            { minecraftUuid: uuid, minecraftName: name },
+            {
+                minecraftUuid: uuid,
+                minecraftName: name,
+                isBedrock: bedrock || false
+            },
             { merge: true }
         );
 
-        // Token nach Verwendung löschen
+        // Token löschen nach Verwendung
         await tokenDoc.ref.delete();
 
-        // Rang aus Firestore holen
+        // Rang + Username holen
         const userSnap = await userRef.get();
         const rank = userSnap.get("rank") || "malzbier";
         const username = userSnap.get("username") || name;
 
-        console.log(`✅ ${name} (${uuid}) verknüpft mit UID ${uid}, Rang: ${rank}`);
+        console.log(`✅ ${name} (${uuid}) [Bedrock: ${bedrock}] → UID ${uid}, Rang: ${rank}`);
 
         res.json({
             success: true,
