@@ -1,4 +1,4 @@
 # Firebase Cloud Function URL
 # Nach dem Deploy von Firebase Functions siehst du die URL im Terminal
 # Beispiel: https://us-central1-baf-app-12345.cloudfunctions.net
-api-url: "https://us-central1-baf-app-1f16d.cloudfunctions.net/biersync"
+api-url: "https://us-central1-bierandfriends-c1764.cloudfunctions.net/biersync"
