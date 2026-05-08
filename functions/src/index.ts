@@ -27,7 +27,6 @@ export const biersync = functions.https.onRequest(async (req, res) => {
             return;
         }
 
-        // Token in Firestore suchen
         const tokenDoc = await db.collection("sync_tokens").doc(token).get();
 
         if (!tokenDoc.exists) {
@@ -46,19 +45,21 @@ export const biersync = functions.https.onRequest(async (req, res) => {
             return;
         }
 
-        // Token-Ablauf prüfen (10 Minuten)
-        const createdAt = tokenData?.createdAt?.toMillis() || 0;
-        const tenMinutes = 10 * 60 * 1000;
-        if (Date.now() - createdAt > tenMinutes) {
-            await tokenDoc.ref.delete();
-            res.status(400).json({
-                success: false,
-                message: "Token abgelaufen. Bitte in der App neu generieren."
-            });
-            return;
+        // Ablauf nur prüfen wenn createdAt vorhanden
+        if (tokenData?.createdAt) {
+            const createdAt = tokenData.createdAt.toMillis();
+            const tenMinutes = 10 * 60 * 1000;
+            if (Date.now() - createdAt > tenMinutes) {
+                await tokenDoc.ref.delete();
+                res.status(400).json({
+                    success: false,
+                    message: "Token abgelaufen. Bitte neu generieren."
+                });
+                return;
+            }
         }
 
-        // Minecraft-Daten speichern
+        // Minecraft-Daten im User-Profil speichern
         const userRef = db.collection("users").doc(uid);
         await userRef.set(
             {
@@ -69,10 +70,10 @@ export const biersync = functions.https.onRequest(async (req, res) => {
             { merge: true }
         );
 
-        // Token löschen nach Verwendung
+        // Token nach Verwendung löschen
         await tokenDoc.ref.delete();
 
-        // Rang + Username holen
+        // Rang + Username aus Firestore holen
         const userSnap = await userRef.get();
         const rank = userSnap.get("rank") || "malzbier";
         const username = userSnap.get("username") || name;
